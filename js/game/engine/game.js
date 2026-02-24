@@ -5,16 +5,15 @@ import {
   DEFAULT_DIFFICULTY,
   DIFFICULTY_PRESETS,
   STORAGE_KEYS,
-  WORLD,
 } from "../constants.js";
 import { createSfxManager } from "../audio/sfx.js";
 import { Player } from "../entities/player.js";
 import { Drone, GroundSoldier, MiniBoss, Turret, intersects } from "../entities/enemies.js";
-import { createLevel1 } from "../level/level1.js";
+import { DEFAULT_MAP_ID, createMapById } from "../maps/registry.js";
 import { drawHud } from "../ui/hud.js";
 
 export class Game {
-  constructor({ canvas, assets, keyboard, touch, ui }) {
+  constructor({ canvas, assets, keyboard, touch, ui, mapId = DEFAULT_MAP_ID }) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
     this.assets = assets;
@@ -22,8 +21,10 @@ export class Game {
     this.touch = touch;
     this.ui = ui;
 
-    this.level = createLevel1();
-    this.player = new Player(80, WORLD.floorY - 64);
+    this.mapId = mapId;
+    this.level = createMapById(this.mapId);
+    this.mapId = this.level.id;
+    this.player = new Player(this.level.spawnX, this.level.spawnY);
     this.enemies = [];
     this.playerBullets = [];
     this.enemyBullets = [];
@@ -31,6 +32,7 @@ export class Game {
 
     this.waveIndex = 0;
     this.boss = null;
+    this.bossEncountered = false;
     this.currentTip = "";
     this.tipTimer = 0;
     this.cameraX = 0;
@@ -44,15 +46,17 @@ export class Game {
     this.difficulty = DIFFICULTY_PRESETS[this.difficultyId];
     this.stats = createStats();
 
-    this.startNewRun(this.difficultyId);
+    this.startNewRun(this.difficultyId, this.mapId);
     this.state = "start";
   }
 
-  startNewRun(difficultyId = this.difficultyId) {
+  startNewRun(difficultyId = this.difficultyId, mapId = this.mapId) {
     this.difficultyId = DIFFICULTY_PRESETS[difficultyId] ? difficultyId : DEFAULT_DIFFICULTY;
     this.difficulty = DIFFICULTY_PRESETS[this.difficultyId];
 
-    this.level = createLevel1();
+    this.level = createMapById(mapId);
+    this.mapId = this.level.id;
+    this.player.setSpawn(this.level.spawnX, this.level.spawnY);
     this.player.reset(true);
     this.enemies = [];
     this.playerBullets = [];
@@ -60,6 +64,7 @@ export class Game {
     this.effects = [];
     this.waveIndex = 0;
     this.boss = null;
+    this.bossEncountered = false;
     this.currentTip = "教学：方向键/WASD 移动，K/空格 跳跃，J 连发。";
     this.tipTimer = 4.8;
     this.cameraX = 0;
@@ -69,7 +74,11 @@ export class Game {
     this.state = "playing";
 
     this.sfx.unlock();
-    this.ui.setStatus(`作战中 · 难度 ${this.difficulty.label}`);
+    this.ui.setStatus(this.getCombatStatusText());
+  }
+
+  getCombatStatusText() {
+    return `作战中 · ${this.level.name} · 难度 ${this.difficulty.label}`;
   }
 
   update(dt) {
@@ -97,7 +106,7 @@ export class Game {
 
     this.time += dt;
 
-    this.player.update(dt, input, this.level.terrain);
+    this.player.update(dt, input, this.level.terrain, this.level);
 
     const playerShot = this.player.tryShoot(input);
     if (playerShot) {
@@ -111,7 +120,7 @@ export class Game {
 
     for (const enemy of this.enemies) {
       if (!enemy.alive) continue;
-      const shots = enemy.update(dt, this.player, this.level.terrain);
+      const shots = enemy.update(dt, this.player, this.level.terrain, this.level);
       if (shots.length) {
         this.enemyBullets.push(...shots);
       }
@@ -126,17 +135,43 @@ export class Game {
       this.tipTimer = Math.max(0, this.tipTimer - dt);
     }
 
-    this.cameraX = clamp(this.player.x - CANVAS_WIDTH * 0.35, 0, this.level.length - CANVAS_WIDTH);
+    const maxCameraX = Math.max(0, this.level.length - CANVAS_WIDTH);
+    this.cameraX = clamp(this.player.x - CANVAS_WIDTH * 0.35, 0, maxCameraX);
 
     if (this.player.lives <= 0 && this.player.hp <= 0) {
       this.finish(false, "任务失败：突击队全灭");
       return;
     }
 
-    const bossCleared = !this.boss || !this.boss.alive;
-    if (bossCleared && this.player.x >= this.level.finishX) {
+    if (this.isMissionComplete()) {
       this.finish(true, "任务成功：基地已摧毁");
     }
+  }
+
+  isMissionComplete() {
+    if (this.player.x < this.level.finishX) {
+      return false;
+    }
+
+    const completion = this.level.completion || {};
+    if (this.player.x < completion.minProgressX) {
+      return false;
+    }
+
+    if (completion.requireAllWaves && this.waveIndex < this.level.waves.length) {
+      return false;
+    }
+
+    if (completion.requireBossKill) {
+      if (!this.bossEncountered) {
+        return false;
+      }
+      if (!this.boss || this.boss.alive) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   spawnWavesByProgress() {
@@ -167,6 +202,7 @@ export class Game {
     }
     if (spawn.type === "boss") {
       this.boss = new MiniBoss(spawn.x, spawn.y, this.difficulty);
+      this.bossEncountered = true;
       return this.boss;
     }
     return null;
@@ -328,10 +364,11 @@ export class Game {
       kills: this.stats.kills,
       accuracy,
       difficultyLabel: this.difficulty.label,
+      mapName: this.level.name,
     };
 
     this.ui.showResult(this.lastResult);
-    this.ui.setStatus(victory ? "作战完成" : "作战失败");
+    this.ui.setStatus(victory ? `作战完成 · ${this.level.name}` : `作战失败 · ${this.level.name}`);
 
     if (victory) {
       this.sfx.victory();
@@ -343,20 +380,20 @@ export class Game {
   togglePause() {
     if (this.state === "playing") {
       this.state = "paused";
-      this.ui.setStatus("已暂停");
+      this.ui.setStatus(`已暂停 · ${this.level.name}`);
       return;
     }
 
     if (this.state === "paused") {
       this.state = "playing";
-      this.ui.setStatus(`作战中 · 难度 ${this.difficulty.label}`);
+      this.ui.setStatus(this.getCombatStatusText());
     }
   }
 
   toggleMute() {
     const next = !this.sfx.muted;
     this.sfx.setMuted(next);
-    this.ui.setStatus(next ? "音效：静音" : `作战中 · 难度 ${this.difficulty.label}`);
+    this.ui.setStatus(next ? "音效：静音" : this.getCombatStatusText());
   }
 
   spawnExplosion(x, y, color, count = 10, ttl = 0.36) {

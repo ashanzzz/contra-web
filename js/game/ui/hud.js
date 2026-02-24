@@ -2,7 +2,7 @@ import { CANVAS_WIDTH, COLORS } from "../constants.js";
 
 export function drawHud(ctx, game) {
   const { player, level } = game;
-  const progress = Math.min(1, player.x / (level.length - 180));
+  const progress = Math.min(1, player.x / Math.max(1, level.length - 180));
   const accuracy = game.stats.shotsFired ? Math.round((game.stats.shotsHit / game.stats.shotsFired) * 100) : 0;
 
   ctx.save();

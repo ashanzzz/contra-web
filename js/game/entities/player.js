@@ -10,6 +10,12 @@ export class Player {
     this.reset(true);
   }
 
+  setSpawn(x, y) {
+    this.spawnX = x;
+    this.spawnY = y;
+    this.lastSafeX = x;
+  }
+
   reset(fullReset = false) {
     this.x = this.spawnX;
     this.y = this.spawnY;
@@ -20,6 +26,7 @@ export class Player {
     this.crouching = false;
     this.fireTimer = 0;
     this.invincible = 0;
+
     if (fullReset) {
       this.maxHp = PLAYER_CONFIG.maxHp;
       this.hp = this.maxHp;
@@ -29,8 +36,12 @@ export class Player {
     }
   }
 
-  update(dt, input, terrain) {
-    this.fireTimer -= dt;
+  update(dt, input, terrain, world = WORLD) {
+    const gravity = toNumber(world.gravity, WORLD.gravity);
+    const floorY = toNumber(world.floorY, WORLD.floorY);
+    const worldLength = toNumber(world.length, WORLD.length);
+
+    this.fireTimer = Math.max(0, this.fireTimer - dt);
     this.invincible = Math.max(0, this.invincible - dt);
 
     const move = (input.left ? -1 : 0) + (input.right ? 1 : 0);
@@ -47,24 +58,24 @@ export class Player {
       this.onGround = false;
     }
 
-    this.vy += WORLD.gravity * dt;
+    this.vy += gravity * dt;
 
     this.x += this.vx * dt;
-    this.resolveHorizontal(terrain);
+    this.resolveHorizontal(terrain, worldLength);
 
     this.y += this.vy * dt;
-    this.resolveVertical(terrain);
+    this.resolveVertical(terrain, floorY, worldLength);
 
     if (this.onGround && this.x > this.lastSafeX) {
       this.lastSafeX = this.x;
     }
 
-    if (this.y > WORLD.floorY + 350) {
+    if (this.y > floorY + 350) {
       this.takeDamage(999);
     }
   }
 
-  resolveHorizontal(terrain) {
+  resolveHorizontal(terrain, worldLength) {
     for (const block of terrain) {
       if (!intersects(this.bounds, block)) continue;
       if (this.vx > 0) {
@@ -73,9 +84,12 @@ export class Player {
         this.x = block.x + block.width;
       }
     }
+
+    if (this.x < 0) this.x = 0;
+    if (this.x > worldLength - this.width) this.x = worldLength - this.width;
   }
 
-  resolveVertical(terrain) {
+  resolveVertical(terrain, floorY) {
     this.onGround = false;
     for (const block of terrain) {
       if (!intersects(this.bounds, block)) continue;
@@ -89,14 +103,11 @@ export class Player {
       }
     }
 
-    if (this.y + this.height >= WORLD.floorY) {
-      this.y = WORLD.floorY - this.height;
+    if (this.y + this.height >= floorY) {
+      this.y = floorY - this.height;
       this.vy = 0;
       this.onGround = true;
     }
-
-    if (this.x < 0) this.x = 0;
-    if (this.x > WORLD.length - this.width) this.x = WORLD.length - this.width;
   }
 
   tryShoot(input) {
@@ -119,8 +130,10 @@ export class Player {
 
   takeDamage(amount) {
     if (this.invincible > 0) return false;
+
     this.hp -= amount;
     this.invincible = PLAYER_CONFIG.invincibleSeconds;
+
     if (this.hp <= 0) {
       this.lives -= 1;
       if (this.lives <= 0) {
@@ -135,6 +148,7 @@ export class Player {
       this.vx = 0;
       this.vy = 0;
     }
+
     return true;
   }
 
@@ -166,4 +180,8 @@ export class Player {
 
 function intersects(a, b) {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+function toNumber(value, fallback) {
+  return Number.isFinite(value) ? value : fallback;
 }

@@ -71,9 +71,12 @@ export class GroundSoldier extends EnemyBase {
     this.vx = ENEMY_STATS.soldier.speed * this.moveMultiplier;
   }
 
-  update(dt, player, terrain) {
+  update(dt, player, terrain, world = WORLD) {
+    const gravity = toNumber(world.gravity, WORLD.gravity);
+    const floorY = toNumber(world.floorY, WORLD.floorY);
+
     this.fireTimer -= dt;
-    this.vy += WORLD.gravity * dt;
+    this.vy += gravity * dt;
 
     this.x += this.vx * dt;
     if (this.x < this.patrol[0]) {
@@ -94,8 +97,8 @@ export class GroundSoldier extends EnemyBase {
       }
     }
 
-    if (this.y + this.height >= WORLD.floorY) {
-      this.y = WORLD.floorY - this.height;
+    if (this.y + this.height >= floorY) {
+      this.y = floorY - this.height;
       this.vy = 0;
     }
 
@@ -132,13 +135,15 @@ export class Drone extends EnemyBase {
     this.vx = Math.random() > 0.5 ? speed : -speed;
   }
 
-  update(dt, player) {
+  update(dt, player, _terrain, world = WORLD) {
+    const worldLength = toNumber(world.length, WORLD.length);
+
     this.fireTimer -= dt;
     this.phase += dt * 3;
     this.x += this.vx * dt;
     this.y = this.baseY + Math.sin(this.phase) * 22;
 
-    if (this.x < 0 || this.x > WORLD.length - this.width) {
+    if (this.x < 0 || this.x > worldLength - this.width) {
       this.vx *= -1;
     }
 
@@ -196,4 +201,8 @@ export class MiniBoss extends EnemyBase {
 
 export function intersects(a, b) {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+function toNumber(value, fallback) {
+  return Number.isFinite(value) ? value : fallback;
 }

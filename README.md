@@ -40,12 +40,12 @@ npx serve . -l 8080
 
 ## 已实现内容（正式版）
 
-- 开始界面、战斗教学提示、胜利/失败结算、重开流程
+- 开始界面（地图选择 + 难度选择）、战斗教学提示、胜利/失败结算、重开流程
 - 难度系统：新兵 / 标准 / 老兵（三档）
-- 1 个完整关卡：引导区 -> 节奏提升 -> 混合威胁 -> 收束战 -> Boss 战
+- 地图系统（可扩展）：当前内置 1 张地图（铁幕突击 / Iron Delta），可继续注册新地图
 - 核心动作：移动 / 跳跃 / 蹲下 / 射击（含射速节奏控制）
 - 敌人类型：地面兵、炮台、飞行单位、Mini Boss
-- 系统机制：子弹碰撞、敌我受伤、无敌帧、HP/Lives、分数、关卡进度条
+- 系统机制：子弹碰撞、敌我受伤、无敌帧、HP/Lives、分数、关卡进度条、结算条件防开局误触
 - 强化反馈：命中/击破粒子、枪口火焰、爆裂特效、实时音效（WebAudio）
 - 场景细节：前后景分层 + 云层视差 + 可视化场景道具（箱体/油桶）
 - 战斗功能：随时暂停、状态提示、结算统计（耗时/命中率/击杀）
@@ -91,7 +91,11 @@ contra-web/
       entities/player.js
       entities/enemies.js
       entities/projectile.js
-      level/level1.js
+      maps/registry.js
+      maps/schema.js
+      maps/iron-delta.js
+      maps/README.md
+      level/level1.js  # 兼容层（映射到 maps）
       input/keyboard.js
       input/touch.js
       ui/hud.js
@@ -99,6 +103,6 @@ contra-web/
 
 ## 可继续扩展
 
-- 增加第二关与武器升级系统
+- 继续新增地图文件并在 `js/game/maps/registry.js` 注册（支持把地图制作拆给其他 AI）
 - 增加手柄支持与可配置键位
 - 接入关卡编辑器或存档点系统
