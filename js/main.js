@@ -52,6 +52,7 @@ const ui = {
 
 let game = null;
 let lastTime = performance.now();
+const launchedFromFileProtocol = window.location.protocol === "file:";
 
 function frame(now) {
   if (!game) {
@@ -69,9 +70,14 @@ function frame(now) {
 }
 
 async function init() {
+  ui.setStatus("加载资源中...");
   const assets = await loadAssets();
   game = new Game({ canvas, assets, keyboard, touch, ui });
   ui.showStart();
+
+  if (launchedFromFileProtocol) {
+    ui.setStatus("建议使用本地静态服务启动（file:// 兼容性较差）");
+  }
 
   difficultySelect.value = DEFAULT_DIFFICULTY;
 
@@ -94,6 +100,8 @@ async function init() {
 init().catch((error) => {
   resultScreen.hidden = false;
   resultTitle.textContent = "加载失败";
-  resultDetail.textContent = error.message;
+  resultDetail.textContent = launchedFromFileProtocol
+    ? `检测到 file:// 直接打开。请在项目目录运行本地静态服务（例如 \`python3 -m http.server 8080\`），再访问 http://localhost:8080。\n\n原始错误：${error.message}`
+    : error.message;
   ui.setStatus("加载异常");
 });

@@ -123,6 +123,12 @@ export class Player {
     this.invincible = PLAYER_CONFIG.invincibleSeconds;
     if (this.hp <= 0) {
       this.lives -= 1;
+      if (this.lives <= 0) {
+        this.hp = 0;
+        this.vx = 0;
+        this.vy = 0;
+        return true;
+      }
       this.hp = this.maxHp;
       this.x = Math.max(this.spawnX, this.lastSafeX - 120);
       this.y = this.spawnY;

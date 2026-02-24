@@ -104,6 +104,7 @@ export class Game {
       this.playerBullets.push(playerShot);
       this.stats.shotsFired += 1;
       this.sfx.fire();
+      this.spawnMuzzleFlash(playerShot.x, playerShot.y, playerShot.vx >= 0 ? 1 : -1);
     }
 
     this.spawnWavesByProgress();
@@ -127,7 +128,7 @@ export class Game {
 
     this.cameraX = clamp(this.player.x - CANVAS_WIDTH * 0.35, 0, this.level.length - CANVAS_WIDTH);
 
-    if (this.player.lives < 0) {
+    if (this.player.lives <= 0 && this.player.hp <= 0) {
       this.finish(false, "任务失败：突击队全灭");
       return;
     }
@@ -270,6 +271,20 @@ export class Game {
   updateEffects(dt) {
     for (const effect of this.effects) {
       effect.life -= dt;
+
+      if (effect.kind === "muzzle") {
+        effect.x += effect.vx * dt;
+        effect.y += effect.vy * dt;
+        effect.vx *= 0.84;
+        effect.vy *= 0.8;
+        continue;
+      }
+
+      if (effect.kind === "burst") {
+        effect.size += 120 * dt;
+        continue;
+      }
+
       effect.x += effect.vx * dt;
       effect.y += effect.vy * dt;
       effect.vy += 380 * dt;
@@ -345,6 +360,15 @@ export class Game {
   }
 
   spawnExplosion(x, y, color, count = 10, ttl = 0.36) {
+    this.effects.push({
+      kind: "burst",
+      x,
+      y,
+      size: 24,
+      life: ttl * 0.9,
+      maxLife: ttl * 0.9,
+    });
+
     for (let i = 0; i < count; i += 1) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 40 + Math.random() * 210;
@@ -361,6 +385,20 @@ export class Game {
     }
   }
 
+  spawnMuzzleFlash(x, y, direction = 1) {
+    this.effects.push({
+      kind: "muzzle",
+      x,
+      y,
+      dir: direction,
+      size: 44,
+      vx: direction * 140,
+      vy: -26,
+      life: 0.12,
+      maxLife: 0.12,
+    });
+  }
+
   render() {
     const ctx = this.ctx;
     this.drawBackground(ctx);
@@ -369,6 +407,7 @@ export class Game {
     ctx.translate(-Math.floor(this.cameraX), 0);
 
     this.drawTerrain(ctx);
+    this.drawProps(ctx);
 
     for (const bullet of this.playerBullets) {
       bullet.draw(ctx);
@@ -416,6 +455,27 @@ export class Game {
     }
   }
 
+  drawProps(ctx) {
+    if (!Array.isArray(this.level.props)) {
+      return;
+    }
+
+    const spriteMap = {
+      crate: this.assets.crate,
+      barrel: this.assets.barrel,
+    };
+
+    for (const prop of this.level.props) {
+      const sprite = spriteMap[prop.type];
+      if (!sprite) {
+        ctx.fillStyle = "rgba(34, 48, 60, 0.7)";
+        ctx.fillRect(prop.x, prop.y, prop.width, prop.height);
+        continue;
+      }
+      ctx.drawImage(sprite, prop.x, prop.y, prop.width, prop.height);
+    }
+  }
+
   drawEnemy(ctx, enemy) {
     const spriteMap = {
       soldier: this.assets.soldier,
@@ -448,9 +508,11 @@ export class Game {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
+    const clouds = this.assets.bgClouds;
     const far = this.assets.bgFar;
     const near = this.assets.bgNear;
 
+    drawParallax(ctx, clouds, this.cameraX * 0.08, 54, 120, 0.38);
     drawParallax(ctx, far, this.cameraX * 0.16, 130, CANVAS_HEIGHT - 260, 0.54);
     drawParallax(ctx, near, this.cameraX * 0.34, 180, CANVAS_HEIGHT - 210, 0.85);
   }
@@ -459,6 +521,35 @@ export class Game {
     for (const effect of this.effects) {
       const alpha = clamp(effect.life / effect.maxLife, 0, 1);
       ctx.globalAlpha = alpha;
+
+      if (effect.kind === "muzzle") {
+        const sprite = this.assets.muzzle;
+        if (sprite) {
+          const size = effect.size;
+          const drawX = effect.x - size * 0.5;
+          const drawY = effect.y - size * 0.5;
+          if (effect.dir < 0) {
+            ctx.save();
+            ctx.translate(drawX + size, drawY);
+            ctx.scale(-1, 1);
+            ctx.drawImage(sprite, 0, 0, size, size);
+            ctx.restore();
+          } else {
+            ctx.drawImage(sprite, drawX, drawY, size, size);
+          }
+        }
+        continue;
+      }
+
+      if (effect.kind === "burst") {
+        const sprite = this.assets.burst;
+        if (sprite) {
+          const size = effect.size;
+          ctx.drawImage(sprite, effect.x - size * 0.5, effect.y - size * 0.5, size, size);
+        }
+        continue;
+      }
+
       ctx.fillStyle = effect.color;
       ctx.fillRect(effect.x, effect.y, effect.size, effect.size);
     }

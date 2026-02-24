@@ -4,10 +4,7 @@
 
 ## 运行方式
 
-### 方式 1（推荐）
-直接双击打开 `index.html`。
-
-### 方式 2（本地静态服务）
+### 方式 1（推荐，本地静态服务）
 在项目目录执行：
 
 ```bash
@@ -15,6 +12,17 @@ python3 -m http.server 8080
 ```
 
 然后访问 `http://localhost:8080`。
+
+### 方式 2（Node.js 静态服务）
+如果你的环境没有 Python，可用：
+
+```bash
+npx serve . -l 8080
+```
+
+然后访问 `http://localhost:8080`。
+
+> 不建议 `file://` 直接双击打开 `index.html`，部分浏览器会限制 ES Module / 资源加载。
 
 ## 操作说明
 
@@ -38,7 +46,8 @@ python3 -m http.server 8080
 - 核心动作：移动 / 跳跃 / 蹲下 / 射击（含射速节奏控制）
 - 敌人类型：地面兵、炮台、飞行单位、Mini Boss
 - 系统机制：子弹碰撞、敌我受伤、无敌帧、HP/Lives、分数、关卡进度条
-- 强化反馈：命中/击破粒子、受伤反馈、实时音效（WebAudio）
+- 强化反馈：命中/击破粒子、枪口火焰、爆裂特效、实时音效（WebAudio）
+- 场景细节：前后景分层 + 云层视差 + 可视化场景道具（箱体/油桶）
 - 战斗功能：随时暂停、状态提示、结算统计（耗时/命中率/击杀）
 - 成绩系统：最高分本地持久化（localStorage）
 - 体验支持：桌面键盘 + 移动触控按钮，自适配手机宽度
@@ -54,6 +63,14 @@ python3 -m http.server 8080
 - `tile_ground.svg`
 - `bg_far.svg`
 - `bg_near.svg`
+- `bg_clouds.svg`
+- `prop_crate.svg`
+- `prop_barrel.svg`
+- `effect_burst.svg`
+- `effect_muzzle.svg`
+- `player_ally.svg`（扩展备用）
+- `enemy_sniper.svg`（扩展备用）
+- `enemy_mech.svg`（扩展备用）
 
 未使用魂斗罗原版素材，避免版权风险。
 

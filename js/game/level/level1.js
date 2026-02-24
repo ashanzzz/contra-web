@@ -15,6 +15,18 @@ export function createLevel1() {
     { x: 5340, y: 392, width: 230, height: 20 },
   ];
 
+  const props = [
+    { type: "crate", x: 190, y: WORLD.floorY - 44, width: 44, height: 44 },
+    { type: "barrel", x: 604, y: WORLD.floorY - 50, width: 34, height: 50 },
+    { type: "crate", x: 976, y: 316, width: 40, height: 40 },
+    { type: "barrel", x: 1450, y: 340, width: 34, height: 50 },
+    { type: "crate", x: 1945, y: 298, width: 40, height: 40 },
+    { type: "barrel", x: 2550, y: 318, width: 34, height: 50 },
+    { type: "crate", x: 3260, y: 348, width: 44, height: 44 },
+    { type: "barrel", x: 4380, y: 340, width: 34, height: 50 },
+    { type: "crate", x: 5440, y: 348, width: 44, height: 44 },
+  ];
+
   const waves = [
     {
       atX: 320,
@@ -78,6 +90,7 @@ export function createLevel1() {
     name: "Operation Iron Delta",
     length: WORLD.length,
     terrain,
+    props,
     waves,
     finishX: WORLD.length - 170,
   };
