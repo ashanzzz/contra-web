@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Operation Iron Delta</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <h1 class="title">Operation Iron Delta</h1>
+      <p class="subtitle">横版突击 · 原创素材 · 桌面与移动端双操作</p>
+      <p id="runStatus" class="status">待命中</p>
+
+      <section class="stage">
+        <canvas id="gameCanvas" aria-label="game canvas"></canvas>
+
+        <div id="startScreen" class="overlay">
+          <article class="card">
+            <h2>任务简报</h2>
+            <p>突击敌军沿岸基地，突破多段火力并摧毁核心机甲。</p>
+            <p>键盘：A/D 移动，K 或空格跳跃，S 下蹲，J 连发，P/ESC 暂停，M 静音。</p>
+            <label class="field" for="difficultySelect">
+              难度选择
+              <select id="difficultySelect">
+                <option value="recruit">新兵（容错更高）</option>
+                <option value="standard" selected>标准（推荐）</option>
+                <option value="veteran">老兵（火力更强）</option>
+              </select>
+            </label>
+            <div class="actions">
+              <button id="startButton" type="button">开始作战</button>
+            </div>
+          </article>
+        </div>
+
+        <div id="resultScreen" class="overlay" hidden>
+          <article class="card">
+            <h2 id="resultTitle">任务结果</h2>
+            <p id="resultDetail">等待结算...</p>
+            <div class="actions">
+              <button id="restartButton" type="button">重新突击</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="touchControls" class="controls" aria-label="touch controls">
+        <div class="pad">
+          <button class="ctrl-btn" data-control="left" type="button">←</button>
+          <button class="ctrl-btn" data-control="right" type="button">→</button>
+          <button class="ctrl-btn" data-control="down" type="button">↓</button>
+          <button class="ctrl-btn jump" data-control="jump" type="button">跳</button>
+        </div>
+
+        <div class="pad-right">
+          <button class="ctrl-btn fire" data-control="fire" type="button">开火</button>
+          <button class="ctrl-btn jump" data-control="jump" type="button">跳</button>
+          <button class="ctrl-btn pause" data-control="pause" type="button">暂停</button>
+        </div>
+      </section>
+
+      <p class="note">提示：手机端使用触控按钮；桌面端触控面板会自动隐藏。</p>
+    </main>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
